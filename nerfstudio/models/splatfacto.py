@@ -35,9 +35,10 @@ from typing_extensions import Literal
 
 from nerfstudio.cameras.cameras import Cameras
 from nerfstudio.data.scene_box import OrientedBox
-from nerfstudio.engine.callbacks import TrainingCallback, TrainingCallbackAttributes, TrainingCallbackLocation
+from nerfstudio.engine.callbacks import (TrainingCallback,
+                                         TrainingCallbackAttributes,
+                                         TrainingCallbackLocation)
 from nerfstudio.engine.optimizers import Optimizers
-
 # need following import for background color override
 from nerfstudio.model_components import renderers
 from nerfstudio.models.base_model import Model, ModelConfig
@@ -225,7 +226,8 @@ class SplatfactoModel(Model):
 
         # metrics
         from torchmetrics.image import PeakSignalNoiseRatio
-        from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
+        from torchmetrics.image.lpip import \
+            LearnedPerceptualImagePatchSimilarity
 
         self.psnr = PeakSignalNoiseRatio(data_range=1.0)
         self.ssim = SSIM(data_range=1.0, size_average=True, channel=3)
@@ -645,6 +647,9 @@ class SplatfactoModel(Model):
         else:
             return 1
 
+    def get_field_outputs(self, **kwargs):
+        raise NotImplementedError("Method not implemented for splatfacto, it has no field.")
+    
     def get_outputs(self, camera: Cameras) -> Dict[str, Union[torch.Tensor, List]]:
         """Takes in a Ray Bundle and returns a dictionary of outputs.
 

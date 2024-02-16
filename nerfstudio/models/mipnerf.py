@@ -22,13 +22,15 @@ from typing import Dict, List, Tuple
 import torch
 from torch.nn import Parameter
 
-from nerfstudio.cameras.rays import RayBundle
+from nerfstudio.cameras.rays import RayBundle, RaySamples
 from nerfstudio.field_components.encodings import NeRFEncoding
 from nerfstudio.field_components.field_heads import FieldHeadNames
 from nerfstudio.fields.vanilla_nerf_field import NeRFField
-from nerfstudio.model_components.losses import MSELoss, scale_gradients_by_distance_squared
+from nerfstudio.model_components.losses import (
+    MSELoss, scale_gradients_by_distance_squared)
 from nerfstudio.model_components.ray_samplers import PDFSampler, UniformSampler
-from nerfstudio.model_components.renderers import AccumulationRenderer, DepthRenderer, RGBRenderer
+from nerfstudio.model_components.renderers import (AccumulationRenderer,
+                                                   DepthRenderer, RGBRenderer)
 from nerfstudio.models.base_model import Model
 from nerfstudio.models.vanilla_nerf import VanillaModelConfig
 from nerfstudio.utils import colormaps, misc
@@ -84,7 +86,8 @@ class MipNerfModel(Model):
         # metrics
         from torchmetrics.functional import structural_similarity_index_measure
         from torchmetrics.image import PeakSignalNoiseRatio
-        from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
+        from torchmetrics.image.lpip import \
+            LearnedPerceptualImagePatchSimilarity
 
         self.psnr = PeakSignalNoiseRatio(data_range=1.0)
         self.ssim = structural_similarity_index_measure
@@ -97,6 +100,12 @@ class MipNerfModel(Model):
         param_groups["fields"] = list(self.field.parameters())
         return param_groups
 
+    def get_field_outputs(self, ray_samples: RaySamples, **kwargs):
+        if self.field is None:
+            raise ValueError("populate_fields() must be called before get_outputs")
+        
+        return self.field(ray_samples, **kwargs)
+    
     def get_outputs(self, ray_bundle: RayBundle):
         if self.field is None:
             raise ValueError("populate_fields() must be called before get_outputs")
@@ -105,7 +114,7 @@ class MipNerfModel(Model):
         ray_samples_uniform = self.sampler_uniform(ray_bundle)
 
         # First pass:
-        field_outputs_coarse = self.field.forward(ray_samples_uniform)
+        field_outputs_coarse = self.get_field_outputs(ray_samples_uniform)
         if self.config.use_gradient_scaling:
             field_outputs_coarse = scale_gradients_by_distance_squared(field_outputs_coarse, ray_samples_uniform)
         weights_coarse = ray_samples_uniform.get_weights(field_outputs_coarse[FieldHeadNames.DENSITY])
@@ -120,7 +129,7 @@ class MipNerfModel(Model):
         ray_samples_pdf = self.sampler_pdf(ray_bundle, ray_samples_uniform, weights_coarse)
 
         # Second pass:
-        field_outputs_fine = self.field.forward(ray_samples_pdf)
+        field_outputs_fine = self.get_field_outputs(ray_samples_pdf)
         if self.config.use_gradient_scaling:
             field_outputs_fine = scale_gradients_by_distance_squared(field_outputs_fine, ray_samples_pdf)
         weights_fine = ray_samples_pdf.get_weights(field_outputs_fine[FieldHeadNames.DENSITY])

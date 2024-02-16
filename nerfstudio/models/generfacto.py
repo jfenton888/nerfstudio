@@ -26,18 +26,28 @@ import torch
 from torch.nn import Parameter
 from typing_extensions import Literal
 
-from nerfstudio.cameras.rays import RayBundle
-from nerfstudio.engine.callbacks import TrainingCallback, TrainingCallbackAttributes, TrainingCallbackLocation
+from nerfstudio.cameras.rays import RayBundle, RaySamples
+from nerfstudio.engine.callbacks import (TrainingCallback,
+                                         TrainingCallbackAttributes,
+                                         TrainingCallbackLocation)
 from nerfstudio.field_components.field_heads import FieldHeadNames
 from nerfstudio.fields.density_fields import HashMLPDensityField
 from nerfstudio.fields.generfacto_field import GenerfactoField
 from nerfstudio.generative.deepfloyd import DeepFloyd
-from nerfstudio.generative.positional_text_embeddings import PositionalTextEmbeddings
+from nerfstudio.generative.positional_text_embeddings import \
+    PositionalTextEmbeddings
 from nerfstudio.generative.stable_diffusion import StableDiffusion
-from nerfstudio.model_components.losses import MSELoss, distortion_loss, interlevel_loss, orientation_loss
-from nerfstudio.model_components.ray_samplers import ProposalNetworkSampler, UniformSampler
-from nerfstudio.model_components.renderers import AccumulationRenderer, DepthRenderer, NormalsRenderer, RGBRenderer
-from nerfstudio.model_components.scene_colliders import AABBBoxCollider, SphereCollider
+from nerfstudio.model_components.losses import (MSELoss, distortion_loss,
+                                                interlevel_loss,
+                                                orientation_loss)
+from nerfstudio.model_components.ray_samplers import (ProposalNetworkSampler,
+                                                      UniformSampler)
+from nerfstudio.model_components.renderers import (AccumulationRenderer,
+                                                   DepthRenderer,
+                                                   NormalsRenderer,
+                                                   RGBRenderer)
+from nerfstudio.model_components.scene_colliders import (AABBBoxCollider,
+                                                         SphereCollider)
 from nerfstudio.model_components.shaders import LambertianShader, NormalsShader
 from nerfstudio.models.base_model import Model, ModelConfig
 from nerfstudio.utils import colormaps, math, misc
@@ -346,12 +356,15 @@ class GenerfactoModel(Model):
         param_groups["proposal_networks"] = list(self.proposal_networks.parameters())
         param_groups["fields"] = list(self.field.parameters())
         return param_groups
+    
+    def get_field_outputs(self, ray_samples: RaySamples, **kwargs):
+        return self.field(ray_samples, **kwargs)
 
     def get_outputs(self, ray_bundle: RayBundle):  # pylint: disable=too-many-statements
         # uniform sampling
         background_rgb = self.field.get_background_rgb(ray_bundle)
         ray_samples, weights_list, ray_samples_list = self.proposal_sampler(ray_bundle, density_fns=self.density_fns)
-        field_outputs = self.field(ray_samples, compute_normals=True)
+        field_outputs = self.get_field_outputs(ray_samples, compute_normals=True)
         density = field_outputs[FieldHeadNames.DENSITY]
 
         if self.initialize_density:

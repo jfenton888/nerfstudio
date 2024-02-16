@@ -26,12 +26,15 @@ import numpy as np
 import torch
 from torch.nn import Parameter
 
-from nerfstudio.cameras.rays import RayBundle
-from nerfstudio.engine.callbacks import TrainingCallback, TrainingCallbackAttributes, TrainingCallbackLocation
+from nerfstudio.cameras.rays import RayBundle, RaySamples
+from nerfstudio.engine.callbacks import (TrainingCallback,
+                                         TrainingCallbackAttributes,
+                                         TrainingCallbackLocation)
 from nerfstudio.field_components.field_heads import FieldHeadNames
 from nerfstudio.fields.density_fields import HashMLPDensityField
 from nerfstudio.model_components.losses import interlevel_loss
-from nerfstudio.model_components.ray_samplers import ProposalNetworkSampler, UniformSampler
+from nerfstudio.model_components.ray_samplers import (ProposalNetworkSampler,
+                                                      UniformSampler)
 from nerfstudio.models.neus import NeuSModel, NeuSModelConfig
 from nerfstudio.utils import colormaps
 
@@ -167,11 +170,14 @@ class NeuSFactoModel(NeuSModel):
 
         return callbacks
 
+    def get_field_outputs(self, ray_samples: RaySamples, **kwargs):
+        return self.field(ray_samples, **kwargs)
+
     def sample_and_forward_field(self, ray_bundle: RayBundle) -> Dict[str, Any]:
         """Sample rays using proposal networks and compute the corresponding field outputs."""
         ray_samples, weights_list, ray_samples_list = self.proposal_sampler(ray_bundle, density_fns=self.density_fns)
 
-        field_outputs = self.field(ray_samples, return_alphas=True)
+        field_outputs = self.get_field_outputs(ray_samples, return_alphas=True)
         weights, transmittance = ray_samples.get_weights_and_transmittance_from_alphas(
             field_outputs[FieldHeadNames.ALPHA]
         )

@@ -21,11 +21,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Dict, List, Type
 
-from nerfstudio.cameras.rays import RayBundle
-from nerfstudio.engine.callbacks import TrainingCallback, TrainingCallbackAttributes, TrainingCallbackLocation
+from nerfstudio.cameras.rays import RayBundle, RaySamples
+from nerfstudio.engine.callbacks import (TrainingCallback,
+                                         TrainingCallbackAttributes,
+                                         TrainingCallbackLocation)
 from nerfstudio.field_components.field_heads import FieldHeadNames
 from nerfstudio.model_components.ray_samplers import NeuSSampler
-from nerfstudio.models.base_surface_model import SurfaceModel, SurfaceModelConfig
+from nerfstudio.models.base_surface_model import (SurfaceModel,
+                                                  SurfaceModelConfig)
 
 
 @dataclass
@@ -89,9 +92,12 @@ class NeuSModel(SurfaceModel):
 
         return callbacks
 
+    def get_field_outputs(self, ray_samples: RaySamples, **kwargs):
+        return self.field(ray_samples, **kwargs)
+
     def sample_and_forward_field(self, ray_bundle: RayBundle) -> Dict:
         ray_samples = self.sampler(ray_bundle, sdf_fn=self.field.get_sdf)
-        field_outputs = self.field(ray_samples, return_alphas=True)
+        field_outputs = self.get_field_outputs(ray_samples, return_alphas=True)
         weights, transmittance = ray_samples.get_weights_and_transmittance_from_alphas(
             field_outputs[FieldHeadNames.ALPHA]
         )

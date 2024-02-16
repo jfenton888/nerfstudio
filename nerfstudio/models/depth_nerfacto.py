@@ -26,7 +26,8 @@ import torch
 
 from nerfstudio.cameras.rays import RayBundle
 from nerfstudio.model_components import losses
-from nerfstudio.model_components.losses import DepthLossType, depth_loss, depth_ranking_loss
+from nerfstudio.model_components.losses import (DepthLossType, depth_loss,
+                                                depth_ranking_loss)
 from nerfstudio.models.nerfacto import NerfactoModel, NerfactoModelConfig
 from nerfstudio.utils import colormaps
 

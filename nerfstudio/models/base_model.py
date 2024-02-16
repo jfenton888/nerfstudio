@@ -28,11 +28,13 @@ from torch import nn
 from torch.nn import Parameter
 
 from nerfstudio.cameras.cameras import Cameras
-from nerfstudio.cameras.rays import RayBundle
+from nerfstudio.cameras.rays import RayBundle, RaySamples
 from nerfstudio.configs.base_config import InstantiateConfig
 from nerfstudio.configs.config_utils import to_immutable_dict
 from nerfstudio.data.scene_box import OrientedBox, SceneBox
-from nerfstudio.engine.callbacks import TrainingCallback, TrainingCallbackAttributes
+from nerfstudio.engine.callbacks import (TrainingCallback,
+                                         TrainingCallbackAttributes)
+from nerfstudio.field_components.field_heads import FieldHeadNames
 from nerfstudio.model_components.scene_colliders import NearFarCollider
 
 
@@ -117,6 +119,17 @@ class Model(nn.Module):
             Mapping of different parameter groups
         """
 
+    @abstractmethod
+    def get_field_outputs(self, ray_bundle: RaySamples, **kwargs) -> Dict[FieldHeadNames, torch.Tensor]:
+        """Takes in a Ray Bundle and returns a dictionary of field outputs.
+
+        Args:
+            ray_bundle: Samples to evaluate field on
+
+        Returns:
+            Outputs of field
+        """
+    
     @abstractmethod
     def get_outputs(self, ray_bundle: Union[RayBundle, Cameras]) -> Dict[str, Union[torch.Tensor, List]]:
         """Takes in a Ray Bundle and returns a dictionary of outputs.

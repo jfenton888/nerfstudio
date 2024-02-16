@@ -33,10 +33,15 @@ from nerfstudio.field_components.spatial_distortions import SceneContraction
 from nerfstudio.fields.nerfacto_field import NerfactoField
 from nerfstudio.fields.sdf_field import SDFFieldConfig
 from nerfstudio.fields.vanilla_nerf_field import NeRFField
-from nerfstudio.model_components.losses import L1Loss, MSELoss, ScaleAndShiftInvariantLoss, monosdf_normal_loss
+from nerfstudio.model_components.losses import (L1Loss, MSELoss,
+                                                ScaleAndShiftInvariantLoss,
+                                                monosdf_normal_loss)
 from nerfstudio.model_components.ray_samplers import LinearDisparitySampler
-from nerfstudio.model_components.renderers import AccumulationRenderer, DepthRenderer, RGBRenderer, SemanticRenderer
-from nerfstudio.model_components.scene_colliders import AABBBoxCollider, NearFarCollider
+from nerfstudio.model_components.renderers import (AccumulationRenderer,
+                                                   DepthRenderer, RGBRenderer,
+                                                   SemanticRenderer)
+from nerfstudio.model_components.scene_colliders import (AABBBoxCollider,
+                                                         NearFarCollider)
 from nerfstudio.models.base_model import Model, ModelConfig
 from nerfstudio.utils import colormaps
 from nerfstudio.utils.colors import get_color
@@ -155,7 +160,8 @@ class SurfaceModel(Model):
         # metrics
         from torchmetrics.functional import structural_similarity_index_measure
         from torchmetrics.image import PeakSignalNoiseRatio
-        from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
+        from torchmetrics.image.lpip import \
+            LearnedPerceptualImagePatchSimilarity
 
         self.psnr = PeakSignalNoiseRatio(data_range=1.0)
         self.ssim = structural_similarity_index_measure
@@ -181,6 +187,17 @@ class SurfaceModel(Model):
 
         Returns:
             Outputs of model. (ie. rendered colors)
+        """
+
+    @abstractmethod
+    def get_field_outputs(self, ray_bundle: RayBundle) -> Dict[FieldHeadNames, torch.Tensor]:
+        """Takes in a Ray Bundle and returns a dictionary of field outputs.
+
+        Args:
+            ray_bundle: Samples to evaluate field on
+
+        Returns:
+            Outputs of field
         """
 
     def get_outputs(self, ray_bundle: RayBundle) -> Dict[str, torch.Tensor]:

@@ -25,14 +25,18 @@ import nerfacc
 import torch
 from torch.nn import Parameter
 
-from nerfstudio.cameras.rays import RayBundle
-from nerfstudio.engine.callbacks import TrainingCallback, TrainingCallbackAttributes, TrainingCallbackLocation
+from nerfstudio.cameras.rays import RayBundle, RaySamples
+from nerfstudio.engine.callbacks import (TrainingCallback,
+                                         TrainingCallbackAttributes,
+                                         TrainingCallbackLocation)
 from nerfstudio.field_components.field_heads import FieldHeadNames
 from nerfstudio.field_components.spatial_distortions import SceneContraction
 from nerfstudio.fields.nerfacto_field import NerfactoField
-from nerfstudio.model_components.losses import MSELoss, scale_gradients_by_distance_squared
+from nerfstudio.model_components.losses import (
+    MSELoss, scale_gradients_by_distance_squared)
 from nerfstudio.model_components.ray_samplers import VolumetricSampler
-from nerfstudio.model_components.renderers import AccumulationRenderer, DepthRenderer, RGBRenderer
+from nerfstudio.model_components.renderers import (AccumulationRenderer,
+                                                   DepthRenderer, RGBRenderer)
 from nerfstudio.models.base_model import Model, ModelConfig
 from nerfstudio.utils import colormaps
 
@@ -137,7 +141,8 @@ class NGPModel(Model):
         # metrics
         from torchmetrics.functional import structural_similarity_index_measure
         from torchmetrics.image import PeakSignalNoiseRatio
-        from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
+        from torchmetrics.image.lpip import \
+            LearnedPerceptualImagePatchSimilarity
 
         self.psnr = PeakSignalNoiseRatio(data_range=1.0)
         self.ssim = structural_similarity_index_measure
@@ -167,6 +172,9 @@ class NGPModel(Model):
         param_groups["fields"] = list(self.field.parameters())
         return param_groups
 
+    def get_field_outputs(self, ray_samples: RaySamples, **kwargs):
+        return self.field(ray_samples, **kwargs)
+    
     def get_outputs(self, ray_bundle: RayBundle):
         assert self.field is not None
         num_rays = len(ray_bundle)
@@ -181,7 +189,7 @@ class NGPModel(Model):
                 cone_angle=self.config.cone_angle,
             )
 
-        field_outputs = self.field(ray_samples)
+        field_outputs = self.get_field_outputs(ray_samples)
         if self.config.use_gradient_scaling:
             field_outputs = scale_gradients_by_distance_squared(field_outputs, ray_samples)
 
