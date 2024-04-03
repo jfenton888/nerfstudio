@@ -367,6 +367,11 @@ class PatchPixelSampler(PixelSampler):
 
     config: PatchPixelSamplerConfig
 
+    def __init__(self, config: PixelSamplerConfig, **kwargs) -> None:
+        super().__init__(config, **kwargs)
+
+        self.config.patch_size = self.kwargs.get("patch_size", self.config.patch_size)
+
     def set_num_rays_per_batch(self, num_rays_per_batch: int):
         """Set the number of rays to sample per batch. Overridden to deal with patch-based sampling.
 

@@ -60,6 +60,8 @@ class ParallelDataManagerConfig(VanillaDataManagerConfig):
     If queue_size <= 0, the queue size is infinite."""
     max_thread_workers: Optional[int] = None
     """Maximum number of threads to use in thread pool executor. If None, use ThreadPool default."""
+    keep_full_image: bool = False
+    """Whether or not to include a reference to the full image in returned batch."""
 
 
 class DataProcessor(mp.Process):  # type: ignore
@@ -220,7 +222,7 @@ class ParallelDataManager(DataManager, Generic[TDataset]):
         """Infer pixel sampler to use."""
         if self.config.patch_size > 1 and type(self.config.pixel_sampler) is PixelSamplerConfig:
             return PatchPixelSamplerConfig().setup(
-                patch_size=self.config.patch_size, num_rays_per_batch=num_rays_per_batch
+                patch_size=self.config.patch_size, num_rays_per_batch=num_rays_per_batch, keep_full_image=self.config.keep_full_image
             )
         is_equirectangular = (dataset.cameras.camera_type == CameraType.EQUIRECTANGULAR.value).all()
         if is_equirectangular.any():
@@ -234,6 +236,7 @@ class ParallelDataManager(DataManager, Generic[TDataset]):
             is_equirectangular=is_equirectangular,
             num_rays_per_batch=num_rays_per_batch,
             fisheye_crop_radius=fisheye_crop_radius,
+            keep_full_image=self.config.keep_full_image
         )
 
     def setup_train(self):
