@@ -238,16 +238,27 @@ class PixelSampler:
 
         c, y, x = (i.flatten() for i in torch.split(indices, 1, dim=-1))
         c, y, x = c.cpu(), y.cpu(), x.cpu()
+
+        nonfullimage_keys = ["depth", "objs_id", "label", "bbx", "RTs", "centermaps", "centers", "cameras"]
+        
         collated_batch = {
-            key: value[c, y, x] for key, value in batch.items() if key != "image_idx" and value is not None
+            key: value[c, y, x] for key, value in batch.items() if key != "image_idx" and value is not None and key not in nonfullimage_keys
+            # key: value[c, y, x] for key, value in batch.items() if (key != "image_idx" or key not in nonfullimage_keys) and value is not None
         }
         assert collated_batch["image"].shape[0] == num_rays_per_batch
 
         # Needed to correct the random indices to their actual camera idx locations.
         indices[:, 0] = batch["image_idx"][c]
         collated_batch["indices"] = indices  # with the abs camera indices
+
+        used_indices = torch.unique(indices[:,0])
+
+        for key in nonfullimage_keys:
+            if key in batch:
+                collated_batch[key] = {idx.item(): batch[key][idx] for idx in used_indices}
+
         if keep_full_image:
-            collated_batch["full_image"] = batch["image"]
+            collated_batch["full_image"] = {idx.item(): batch["image"][idx] for idx in used_indices}
 
         return collated_batch
 

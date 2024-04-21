@@ -206,6 +206,7 @@ def setup_event_writer(
     log_dir: Path,
     experiment_name: str,
     project_name: str = "nerfstudio-project",
+    model: torch.nn.Module = None,
 ) -> None:
     """Initialization of all event writers specified in config
     Args:
@@ -220,7 +221,7 @@ def setup_event_writer(
         EVENT_WRITERS.append(curr_writer)
         using_event_writer = True
     if is_wandb_enabled:
-        curr_writer = WandbWriter(log_dir=log_dir, experiment_name=experiment_name, project_name=project_name)
+        curr_writer = WandbWriter(log_dir=log_dir, experiment_name=experiment_name, project_name=project_name, model=model)
         EVENT_WRITERS.append(curr_writer)
         using_event_writer = True
     if is_tensorboard_enabled:
@@ -304,7 +305,7 @@ class TimeWriter:
 class WandbWriter(Writer):
     """WandDB Writer Class"""
 
-    def __init__(self, log_dir: Path, experiment_name: str, project_name: str = "nerfstudio-project"):
+    def __init__(self, log_dir: Path, experiment_name: str, project_name: str = "nerfstudio-project", model=None):
         import wandb  # wandb is slow to import, so we only import it if we need it.
 
         wandb.init(
@@ -313,6 +314,12 @@ class WandbWriter(Writer):
             name=os.environ.get("WANDB_NAME", experiment_name),
             reinit=True,
         )
+        if model:
+            wandb.watch(
+                models=model,
+                log="all",
+                log_freq=40,
+                log_graph=True)
 
     def write_image(self, name: str, image: Float[Tensor, "H W C"], step: int) -> None:
         import wandb  # wandb is slow to import, so we only import it if we need it.

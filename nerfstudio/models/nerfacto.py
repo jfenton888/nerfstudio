@@ -326,6 +326,7 @@ class NerfactoModel(Model):
             "accumulation": accumulation,
             "depth": depth,
             "expected_depth": expected_depth,
+            "field_outputs": field_outputs,
         }
 
         if self.config.predict_normals:
